@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GitHub Repo File Structure Viewer (PDF Previewer)</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      background: linear-gradient(135deg, #6e7e7e, #1d8d6d, #e66c9c);
+      color: white;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      flex-direction: column;
+      text-align: center;
+    }
+    h1 {
+      font-size: 36px;
+      margin-bottom: 20px;
+      color: #f0f0f0;
+    }
+    input, button {
+      padding: 12px;
+      font-size: 18px;
+      margin: 10px 0;
+      border-radius: 5px;
+      border: 2px solid #4CAF50;
+      background-color: #2f3441;
+      color: white;
+      width: 300px;
+      outline: none;
+      transition: all 0.3s;
+    }
+    input:focus, button:hover {
+      border-color: #2196F3;
+      background-color: #333c49;
+    }
+    button {
+      cursor: pointer;
+    }
+    .progress-bar-container {
+      width: 80%;
+      background-color: rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      margin: 20px 0;
+      display: none;
+      height: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+    }
+    .progress-bar {
+      height: 100%;
+      width: 0;
+      background-color: #64b5f6;
+      border-radius: 10px;
+      text-align: center;
+      color: white;
+      line-height: 8px;
+      font-size: 12px;
+      transition: width 0.3s ease-in-out;
+    }
+    #fileStructure {
+      margin-top: 20px;
+      text-align: left;
+      overflow-x: auto;
+      width: 60%;
+      padding: 20px;
+      background-color: rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    }
+    ul {
+      padding-left: 20px;
+      list-style-type: none;
+      margin: 0;
+    }
+    li {
+      margin: 5px 0;
+      font-size: 18px;
+      transition: all 0.3s;
+    }
+    li a {
+      color: #64b5f6;
+      text-decoration: none;
+      transition: color 0.3s;
+    }
+    li a:hover {
+      color: #03a9f4;
+    }
+    li.folder {
+      font-weight: bold;
+      font-size: 20px;
+      color: #f48fb1;
+      transition: all 0.3s;
+    }
+    li.folder:hover {
+      color: #e91e63;
+      cursor: pointer;
+    }
+    li.file {
+      color: #8bc34a;
+    }
+    li.file:hover {
+      color: #558b2f;
+    }
+    .folder-toggle {
+      cursor: pointer;
+      color: #f48fb1;
+      margin-right: 5px;
+    }
+  </style>
+</head>
+<body>
+  <h1>GitHub Repo File Structure Viewer (PDF Previewer)</h1>
+  <div>
+    <input type="text" id="repoInput" placeholder="e.g., zxyup/Milestones-of-AI" />
+    <input type="text" id="tokenInput" placeholder="Your GitHub Token (optional)" />
+    <button onclick="fetchRepoStructure()">Parse Repo</button>
+  </div>
+
+  <!-- Progress bar -->
+  <div class="progress-bar-container" style="display: none;">
+    <div id="progressBar" class="progress-bar">0%</div>
+  </div>
+
+  <!-- Output file structure -->
+  <div id="fileStructure"></div>
+
+  <script>
+    async function fetchRepoStructure() {
+      const repo = document.getElementById('repoInput').value.trim();
+      const token = document.getElementById('tokenInput').value.trim();
+      const fileStructureDiv = document.getElementById('fileStructure');
+      const progressBarContainer = document.querySelector('.progress-bar-container');
+      const progressBar = document.getElementById('progressBar');
+      fileStructureDiv.innerHTML = '';
+      progressBarContainer.style.display = 'block'; // Show progress bar
+
+      if (!repo) {
+        fileStructureDiv.innerHTML = '<p>Please enter a valid GitHub repository.</p>';
+        progressBarContainer.style.display = 'none'; // Hide progress bar
+        return;
+      }
+
+      try {
+        const [user, repoName] = repo.split('/');
+        if (!user || !repoName) {
+          throw new Error('Invalid repository format');
+        }
+
+        const apiUrl = `https://api.github.com/repos/${user}/${repoName}/contents`;
+        const structureHtml = await generateFileStructureHtml(apiUrl, user, repoName, progressBar, token);
+        fileStructureDiv.innerHTML = `<h2>File Structure of ${repo}:</h2>${structureHtml}`;
+        progressBarContainer.style.display = 'none'; // Hide progress bar after completion
+      } catch (error) {
+        fileStructureDiv.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+        progressBarContainer.style.display = 'none'; // Hide progress bar
+      }
+    }
+
+    async function generateFileStructureHtml(url, user, repoName, progressBar, token) {
+      try {
+        const headers = {};
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`; // Add token to the request headers
+        }
+
+        const response = await fetch(url, { headers: headers });
+        if (!response.ok) {
+          throw new Error(`GitHub API returned an error: ${response.statusText}`);
+        }
+        const contents = await response.json();
+        contents.sort((a, b) => a.name.localeCompare(b.name)); // Sort by name in lexicographical order
+
+        let html = '<ul>';
+        const totalItems = contents.length;
+        let processedItems = 0;
+
+        for (const item of contents) {
+          if (item.type === 'file') {
+            if (item.name.endsWith('.pdf')) {
+              // Generate the jsDelivr link for the PDF file
+              const jsdelivrUrl = `https://cdn.jsdelivr.net/gh/${user}/${repoName}/${item.path}`;
+              html += `<li class="file"><a href="${jsdelivrUrl}" target="_blank">${item.name}</a></li>`;
+            } else {
+              // For non-PDF files, provide the original GitHub link
+              const githubUrl = `https://github.com/${user}/${repoName}/blob/master/${item.path}`;
+              html += `<li class="file"><a href="${githubUrl}" target="_blank">${item.name}</a></li>`;
+            }
+          } else if (item.type === 'dir') {
+            html += `<li class="folder"><span class="folder-toggle" onclick="toggleFolder('${item.path}')">[+]</span>${item.name}</li>`;
+            const subStructure = await generateFileStructureHtml(item.url, user, repoName, progressBar, token);
+            html += subStructure;
+          }
+          processedItems++;
+          // Update the progress bar
+          const progress = Math.floor((processedItems / totalItems) * 100);
+          progressBar.style.width = `${progress}%`;
+          progressBar.innerText = `${progress}%`;
+        }
+        html += '</ul>';
+        return html;
+      } catch (error) {
+        console.error(error);
+        return '<p style="color: red;">Failed to fetch structure.</p>';
+      }
+    }
+
+    function toggleFolder(path) {
+      const folderItems = document.querySelectorAll(`li[data-folder="${path}"]`);
+      const toggleSpan = event.target;
+      if (folderItems[0].style.display === 'none') {
+        folderItems.forEach(item => item.style.display = 'block');
+        toggleSpan.innerText = '[-]';
+      } else {
+        folderItems.forEach(item => item.style.display = 'none');
+        toggleSpan.innerText = '[+]';
+      }
+    }
+  </script>
+</body>
+</html>
