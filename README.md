@@ -11,4 +11,4 @@ Viewing and previewing PDF files on GitHub is inconvenient. GitHub doesn't nativ
 
 ## Example Demonstration
 ### 1. Input Repository: `mynane/PDF` ![](asset/e1.png)
-### 2. Input Repository: `guyuehome/ros_21_tutorials` ![](asset/e2.png)
+### 2. Input Repository: `guyuehome/ros_21_tutorials` ![](asset/e21.png)
