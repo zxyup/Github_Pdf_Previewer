@@ -8,3 +8,7 @@ Viewing and previewing PDF files on GitHub is inconvenient. GitHub doesn't nativ
 - Provides direct links to PDF files via jsDelivr CDN for quick online previewing.
 - Non-PDF files link to the raw GitHub file page.
 - Supports GitHub Token for higher access permissions (optional).
+
+## Example Demonstration
+### 1. Input Repository: `mynane/PDF` ![](asset/e1.png)
+### 2. Input Repository: `guyuehome/ros_21_tutorials` ![](asset/e2.png)
